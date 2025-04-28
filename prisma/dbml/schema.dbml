@@ -2,32 +2,74 @@
 //// THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 //// ------------------------------------------------------
 
-Table User {
-  id String [pk]
+Table FormulaRecord {
+  id Int [pk, increment]
+  formulaId String [unique, not null]
+  createTime DateTime [default: `now()`, not null]
+  colorValues Json
+  substrate Substrate
+  substrateId Int
+  equipment Equipment
+  equipmentId Int
+  dyes DyeUsage [not null]
+  lightReflectivity String [not null, default: '[95.17,96.75,97.2,97.18,97.14,97.19,97.39,97.68,97.96,98.1,98.04,97.84,97.58,97.35,97.19,97.07,96.98,96.9,96.85,96.85,96.94,97.11,97.27,97.26,96.91,96.35,95.9,95.89,96.63,98.47,100.86]']
+  tempRate String
+  holdTime String
+  pH String
+  ratio String
+  stirringRate String
+  result String
+  updatedAt DateTime [not null]
+}
+
+Table DyeUsage {
+  id Int [pk, increment]
+  formulaId Int [not null]
+  formula FormulaRecord [not null]
+  dyeId Int [not null]
+  concentration String [not null]
+}
+
+Table Dye {
+  id Int [pk, increment]
+  name String [unique, not null]
+  brand String
+  type String
+  fixationRate String
+  structure String
+  compatibility String
+  concentrations Json
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime [not null]
-  email String [unique, not null]
-  password String [not null]
-  firstname String
-  lastname String
-  posts Post [not null]
-  role Role [not null]
 }
 
-Table Post {
-  id String [pk]
+Table Equipment {
+  id Int [pk, increment]
+  name String [unique, not null]
+  model String
+  stirringMethod String
+  tempPrecision String
+  capacity String
+  feeding String
+  status String
+  formulas FormulaRecord [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime [not null]
-  published Boolean [not null]
-  title String [not null]
-  content String
-  author User
-  authorId String
 }
 
-Enum Role {
-  ADMIN
-  USER
+Table Substrate {
+  id Int [pk, increment]
+  name String [unique, not null]
+  weight String
+  composition String
+  pretreatment String
+  formulas FormulaRecord [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
 }
 
-Ref: Post.authorId > User.id
+Ref: FormulaRecord.substrateId > Substrate.id
+
+Ref: FormulaRecord.equipmentId > Equipment.id
+
+Ref: DyeUsage.formulaId > FormulaRecord.id [delete: Cascade]

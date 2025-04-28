@@ -1,5 +1,5 @@
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
@@ -12,30 +12,84 @@ generator dbml {
   provider = "prisma-dbml-generator"
 }
 
-model User {
-  id        String   @id @default(cuid())
-  createdAt DateTime @default(now())
+
+// 配方记录
+model FormulaRecord {
+  id        Int      @id @default(autoincrement())
+  formulaId String   @unique // 配方编号
+  createTime DateTime @default(now())
+  colorValues Json? //转换的颜色值
+
+  // 关联
+  substrate    Substrate? @relation(fields: [substrateId], references: [id]) // 基材
+  substrateId  Int?
+  equipment    Equipment? @relation(fields: [equipmentId], references: [id]) // 设备
+  equipmentId  Int?
+  dyes         DyeUsage[] // 染料使用记录
+
+  lightReflectivity   String @default("[95.17,96.75,97.2,97.18,97.14,97.19,97.39,97.68,97.96,98.1,98.04,97.84,97.58,97.35,97.19,97.07,96.98,96.9,96.85,96.85,96.94,97.11,97.27,97.26,96.91,96.35,95.9,95.89,96.63,98.47,100.86]") // 光谱反射率
+  // 工艺参数
+  tempRate     String?  // 升温速率 (℃/min)
+  holdTime     String?    // 保温时间 (min)
+  pH           String?  // pH值
+  ratio        String? // 浴比
+  stirringRate String?    // 搅拌频率 (rpm)
+
+  // 打样结果
+  result     String? // 打样结果
+
   updatedAt DateTime @updatedAt
-  email     String   @unique
-  password  String
-  firstname String?
-  lastname  String?
-  posts     Post[]
-  role      Role
 }
 
-model Post {
-  id        String   @id @default(cuid())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  published Boolean
-  title     String
-  content   String?
-  author    User?    @relation(fields: [authorId], references: [id])
-  authorId  String?
+// 染料使用记录
+model DyeUsage {
+  id          Int      @id @default(autoincrement())
+  formulaId   Int
+  formula     FormulaRecord @relation(fields: [formulaId], references: [id], onDelete: Cascade)
+  dyeId       Int
+  concentration String  // 浓度
+
 }
 
-enum Role {
-  ADMIN
-  USER
+// 染料库
+model Dye {
+  id            Int      @id @default(autoincrement())
+  name          String   @unique // 染料名称/编号
+  brand         String?  // 品牌
+  type          String?  // 类型
+  fixationRate  String?   // 固色率
+  structure     String?  // 分子结构
+  compatibility String?  // 染料兼容性数据
+  concentrations Json?   // 存储多组上染曲线和颜色梯度数据的数组
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
+
+// 设备库
+model Equipment {
+  id              Int        @id @default(autoincrement())
+  name            String     @unique // 设备名称
+  model           String?     // 型号
+  stirringMethod  String?    // 搅拌系统
+  tempPrecision   String?    // 控温精度
+  capacity       String?    //打色机容量
+  feeding         String?    // 加料控制
+  status          String?    // 设备状态
+  formulas        FormulaRecord[]  // 添加这行，与 FormulaRecord 的关联
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// 基材库
+model Substrate {
+  id              Int        @id @default(autoincrement())
+  name            String     @unique // 基材名称
+  weight          String?     // 克重
+  composition     String?    // 成分
+  pretreatment    String?    // 预处理工艺
+  formulas        FormulaRecord[]  // 添加这行，与 FormulaRecord 的关联
+  
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+} 

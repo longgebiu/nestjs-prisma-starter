@@ -1,43 +1,34 @@
-import { GraphQLModule } from '@nestjs/graphql';
-import { Logger, Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
-import { PrismaModule, loggingMiddleware } from 'nestjs-prisma';
+import { Module } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AppResolver } from './app.resolver';
-import { AuthModule } from './auth/auth.module';
-import { UsersModule } from './users/users.module';
-import { PostsModule } from './posts/posts.module';
-import config from './common/configs/config';
-import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
-import { GqlConfigService } from './gql-config.service';
+import { JwtModule } from '@nestjs/jwt';
+import { FormulaRecordModule } from './formula-record/formula-record.module';
+import { DyeModule } from './dye/dye.modules';
+import { EquipmentModule } from './equipment/equipment.module';
+import { SubstrateModule } from './substrate/substrate.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true, load: [config] }),
-    PrismaModule.forRoot({
-      isGlobal: true,
-      prismaServiceOptions: {
-        middlewares: [
-          // configure your prisma middleware
-          loggingMiddleware({
-            logger: new Logger('PrismaMiddleware'),
-            logLevel: 'log',
-          }),
-        ],
-      },
+    ConfigModule.forRoot({ isGlobal: true }),
+    JwtModule.registerAsync({
+      global: false,
+      useFactory: (configService: ConfigService) => ({
+        secret: configService.get<string>('JWT_SECRET'),
+        signOptions: { expiresIn: '30d' },
+      }),
+      inject: [ConfigService],
     }),
-
-    GraphQLModule.forRootAsync<ApolloDriverConfig>({
-      driver: ApolloDriver,
-      useClass: GqlConfigService,
-    }),
-
-    AuthModule,
-    UsersModule,
-    PostsModule,
+    FormulaRecordModule,
+    DyeModule,
+    EquipmentModule,
+    SubstrateModule,
   ],
   controllers: [AppController],
-  providers: [AppService, AppResolver],
+  providers: [
+    AppService,
+    AppResolver,
+  ],
 })
 export class AppModule {}

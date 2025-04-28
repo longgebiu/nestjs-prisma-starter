@@ -9,12 +9,13 @@ import type {
   NestConfig,
   SwaggerConfig,
 } from './common/configs/config.interface';
+import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   // Validation
-  app.useGlobalPipes(new ValidationPipe());
+  app.useGlobalPipes(new ValidationPipe({ transform: true }));
 
   // enable shutdown hook
   app.enableShutdownHooks();
@@ -29,22 +30,25 @@ async function bootstrap() {
   const swaggerConfig = configService.get<SwaggerConfig>('swagger');
 
   // Swagger Api
-  if (swaggerConfig.enabled) {
+  if (swaggerConfig?.enabled) {
     const options = new DocumentBuilder()
-      .setTitle(swaggerConfig.title || 'Nestjs')
-      .setDescription(swaggerConfig.description || 'The nestjs API description')
-      .setVersion(swaggerConfig.version || '1.0')
+      .setTitle(swaggerConfig?.title || 'Nestjs')
+      .setDescription(swaggerConfig?.description || 'The nestjs API description')
+      .setVersion(swaggerConfig?.version || '1.0')
       .build();
     const document = SwaggerModule.createDocument(app, options);
 
-    SwaggerModule.setup(swaggerConfig.path || 'api', app, document);
+    SwaggerModule.setup(swaggerConfig?.path || 'api', app, document);
   }
 
   // Cors
-  if (corsConfig.enabled) {
+  if (corsConfig?.enabled) {
     app.enableCors();
   }
 
-  await app.listen(process.env.PORT || nestConfig.port || 3000);
+  // 全局注册响应拦截器
+  app.useGlobalInterceptors(new TransformInterceptor());
+
+  await app.listen(process.env.PORT || nestConfig?.port || 3000);
 }
 bootstrap();
